@@ -16,13 +16,17 @@ def safe_rerun():
         st.rerun()
     except AttributeError:
         st.experimental_rerun()
+
 # Helpers
 def get_today():
     return date.today().isoformat()
 
 def fetch_tasks():
     records = sheet.get_all_records()
-    return [r for r in records if r["Verwijderd"] == "FALSE" and r["Datum"] == get_today()]
+    return [
+        {"ID": r["ID"], "Titel": r["Titel"], "Link": r["Link"], "Laatst Gewijzigd": r["Laatst Gewijzigd"]}
+        for r in records if r["Verwijderd"] == "FALSE" and r["Datum"] == get_today()
+    ]
 
 def update_task_cell(task_id, col_name, value):
     records = sheet.get_all_records()
@@ -40,6 +44,7 @@ def soft_delete(task_id):
 st.title("📝 Dagelijkse To-Do Lijst")
 st.markdown(f"📅 **{get_today()}**")
 
+# Toevoegen van nieuwe taak
 with st.form("add_form"):
     title = st.text_input("Titel")
     link = st.text_input("Link (optioneel)")
@@ -50,20 +55,37 @@ with st.form("add_form"):
         st.success("Taak toegevoegd!")
         safe_rerun()
 
-# Toon taken
+# Taken ophalen
 tasks = fetch_tasks()
+
+# Checkbox-status opslaan in session_state
+if "checkboxes" not in st.session_state:
+    st.session_state.checkboxes = {}
+
+# Huidige taken-ID's bepalen
+current_ids = {str(task["ID"]) for task in tasks}
+existing_keys = set(st.session_state.checkboxes.keys())
+
+# Nieuwe taken toevoegen aan checkbox-status
+for task_id in current_ids - existing_keys:
+    st.session_state.checkboxes[task_id] = False
+
+# Verwijder oude checkbox-statussen
+for task_id in existing_keys - current_ids:
+    del st.session_state.checkboxes[task_id]
+
+# Taken tonen
 if not tasks:
     st.info("Je hebt nog geen taken voor vandaag.")
 else:
     for task in tasks:
+        task_id = str(task["ID"])
         cols = st.columns([0.06, 0.65, 0.15, 0.14])
-        task_id = task["ID"]
-        is_done = task["Voltooid"] == "TRUE"
 
         with cols[0]:
-            checked = st.checkbox("Voltooid", value=is_done, key=f"check_{task_id}", label_visibility="collapsed")
-            if checked != is_done:
-                update_task_cell(task_id, "Voltooid", "TRUE" if checked else "FALSE")
+            checked = st.checkbox("Voltooid", value=st.session_state.checkboxes[task_id],
+                                  key=f"check_{task_id}", label_visibility="collapsed")
+            st.session_state.checkboxes[task_id] = checked
 
         with cols[1]:
             if task["Link"]:
