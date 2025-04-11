@@ -61,7 +61,7 @@ else:
         is_done = task["Voltooid"] == "TRUE"
 
         with cols[0]:
-            checked = st.checkbox("", value=is_done, key=f"check_{task_id}")
+            checked = st.checkbox("Voltooid", value=is_done, key=f"check_{task_id}", label_visibility="collapsed")
             if checked != is_done:
                 update_task_cell(task_id, "Voltooid", "TRUE" if checked else "FALSE")
 
