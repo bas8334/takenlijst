@@ -11,12 +11,6 @@ credentials = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["googl
 client = gspread.authorize(credentials)
 sheet = client.open_by_url(st.secrets["google_sheets"]["sheet_url"]).sheet1
 
-def safe_rerun():
-    try:
-        st.rerun()
-    except AttributeError:
-        st.experimental_rerun()
-
 # Helpers
 def get_today():
     return date.today().isoformat()
@@ -49,8 +43,7 @@ with st.form("add_form"):
         new_id = max([r["ID"] for r in records], default=0) + 1
         sheet.append_row([new_id, title, link, "FALSE", get_today(), datetime.now().isoformat(), "FALSE"])
         st.success("Taak toegevoegd!")
-        st.experimental_rerun()
-        safe_rerun()
+        st.rerun()
 
 # Toon taken
 tasks = fetch_tasks()
@@ -63,9 +56,15 @@ else:
         is_done = task["Voltooid"] == "TRUE"
 
         with cols[0]:
-            checked = st.checkbox("", value=is_done, key=f"check_{task_id}")
+            checked = st.checkbox(
+                "Markeer als voltooid",
+                value=is_done,
+                key=f"check_{task_id}",
+                label_visibility="collapsed"
+            )
             if checked != is_done:
                 update_task_cell(task_id, "Voltooid", "TRUE" if checked else "FALSE")
+                st.rerun()
 
         with cols[1]:
             if task["Link"]:
@@ -76,8 +75,7 @@ else:
         with cols[2]:
             if cols[2].button("🗑️", key=f"delete_{task_id}"):
                 soft_delete(task_id)
-                st.experimental_rerun()
-                safe_rerun()
+                st.rerun()
 
         with cols[3]:
             st.caption(f"Gewijzigd: {task['Laatst Gewijzigd'].split('T')[0]}")
