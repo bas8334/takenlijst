@@ -17,7 +17,7 @@ def get_today():
 
 def fetch_tasks():
     records = sheet.get_all_records()
-    return [r for r in records if r["Verwijderd"] == "FALSE" and r["Datum"] == get_today()]
+    return [r for r in records if r["Verwijderd"] == "FALSE"]
 
 def update_task_cell(task_id, col_name, value):
     records = sheet.get_all_records()
